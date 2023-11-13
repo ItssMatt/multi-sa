@@ -47,9 +47,7 @@ ULONG mainThread(void* hModule)
             player->resetLastTypedCharacters();
         }
         if (GetAsyncKeyState(VK_F7) & 1) {
-            CVector2D lc = player->get2DMapPosition();
-            std::cout << "X: " << lc.x << " | Y: " << lc.y << "\n";
-            player->setMoney(player->getMoney() + 696969);
+
         }
 
         Sleep(10);

@@ -4,10 +4,21 @@
     <Filter Include="Main">
       <UniqueIdentifier>{e686b0ad-6354-48d8-9e9b-2b928c578b55}</UniqueIdentifier>
     </Filter>
+    <Filter Include="nlohmann">
+      <UniqueIdentifier>{71bdc15d-1f22-4294-9432-a888e19fac0b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main\main.cpp">
       <Filter>Main</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="nlohmann\json.hpp">
+      <Filter>nlohmann</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Release\config.json" />
   </ItemGroup>
 </Project>

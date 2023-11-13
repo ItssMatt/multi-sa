@@ -10,6 +10,9 @@
     <Filter Include="Player">
       <UniqueIdentifier>{707f7b3c-91c3-4fdd-a03f-d8ac2a8b6c3d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Interface">
+      <UniqueIdentifier>{84a10cdb-2896-4748-aac8-a7585dff10ad}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main\dllmain.cpp">
@@ -26,5 +29,13 @@
     <ClInclude Include="Player\Player.h">
       <Filter>Player</Filter>
     </ClInclude>
+    <ClInclude Include="Interface\Detours.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="Interface\Detours.lib">
+      <Filter>Interface</Filter>
+    </Library>
   </ItemGroup>
 </Project>
