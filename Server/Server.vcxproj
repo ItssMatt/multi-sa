@@ -127,10 +127,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CPlayer\CPlayer.cpp" />
     <ClCompile Include="Main\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CPlayer\CPlayer.h" />
     <ClInclude Include="nlohmann\json.hpp" />
+    <ClInclude Include="RPC\RPC.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Release\config.json" />

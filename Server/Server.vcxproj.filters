@@ -7,15 +7,30 @@
     <Filter Include="nlohmann">
       <UniqueIdentifier>{71bdc15d-1f22-4294-9432-a888e19fac0b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CPlayer">
+      <UniqueIdentifier>{2fc8f224-1042-4be2-ab04-8e3bd07fed71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RPC">
+      <UniqueIdentifier>{5215f976-8cc6-4715-916e-d68f6babdf91}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main\main.cpp">
       <Filter>Main</Filter>
     </ClCompile>
+    <ClCompile Include="CPlayer\CPlayer.cpp">
+      <Filter>CPlayer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nlohmann\json.hpp">
       <Filter>nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="CPlayer\CPlayer.h">
+      <Filter>CPlayer</Filter>
+    </ClInclude>
+    <ClInclude Include="RPC\RPC.h">
+      <Filter>RPC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
