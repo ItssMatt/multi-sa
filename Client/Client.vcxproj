@@ -138,7 +138,10 @@
     <ClCompile Include="Player\Player.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Hooks\hooks.hpp" />
     <ClInclude Include="Interface\Detours.h" />
+    <ClInclude Include="Player\PedStates.h" />
+    <ClInclude Include="Player\PedTypes.h" />
     <ClInclude Include="Player\Player.h" />
   </ItemGroup>
   <ItemGroup>

@@ -17,14 +17,19 @@
 
 class CPlayer {
 public:
-    USHORT id;
-    SOCKET player_socket;
+    // SERVER LOGIC
+    USHORT id; // server-side id
+    SOCKET player_socket; // client socket
     bool validPlayer;
+
+    // PLAYER VARIABLES
+    float health; // server-side health
+    float armor; // server-side armor
 
     // CONSTRUCTORS
     CPlayer(void);
 
-    static CPlayer gPlayers[MAX_PLAYERS]; // GLOBAL VAR STORING EVERY PLAYER
+    static CPlayer gPlayers[MAX_PLAYERS]; // Global variable storing every connected player.
 
     // FUNCTIONS THAT CAN BE CALLED OUTSIDE THIS CLASS
     static int getAvailablePlayerID(void);

@@ -1,7 +1,9 @@
 /*************************************************************
 
 	The Player class. The local player and every player on
-	the server is registered by this class.
+	the server is runs by this class.
+	The CLocal class. It holds a pointer to the local player
+	and many variables.
 
  *************************************************************/
 
@@ -39,7 +41,8 @@ public:
 	void freeze(void); // de-sync if attempt to freeze an entity locally.
 	void unfreeze(void); // de-sync if attempt to unfreeze a frozen entity locally.
 
-	bool isPaused(void); // (*)
+	static BYTE getMenuID(void); // (*)
+	static bool isPaused(void); // (*)
 	CVector2D get2DMapPosition(void); // (*) -> gets the 2d coordinates of the player on the map. only updates when the player enters it from the menu!
 
 	char* getLastTypedCharacters(void); // (*)
@@ -57,13 +60,13 @@ public:
 	bool getHUD(void); // (*)
 };
 
+class CLocal {
+public:
+	Player* local_ped;
+	DWORD newState;
+	DWORD oldState;
 
-enum ePedStates {
-	PLAYER_STATE_EXITING_VEHICLE = 0,
-	PLAYER_STATE_ONFOOT = 1,
-	PLAYER_STATE_DRIVING = 50,
-	PLAYER_STATE_WASTED = 55,
-	PLAYER_STATE_BUSTED = 63
+	CLocal(void);
 };
 
 #endif

@@ -13,6 +13,9 @@
     <Filter Include="Interface">
       <UniqueIdentifier>{84a10cdb-2896-4748-aac8-a7585dff10ad}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Hooks">
+      <UniqueIdentifier>{4e5cffc1-dc5c-4db2-bd89-be1c56f49323}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main\dllmain.cpp">
@@ -31,6 +34,15 @@
     </ClInclude>
     <ClInclude Include="Interface\Detours.h">
       <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Hooks\hooks.hpp">
+      <Filter>Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Player\PedStates.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Player\PedTypes.h">
+      <Filter>Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

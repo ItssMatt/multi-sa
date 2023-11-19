@@ -68,6 +68,10 @@ void Player::unfreeze(void) {
 	*(BYTE*)(*(DWORD*)this + 0x598) = 0;
 }
 
+BYTE Player::getMenuID(void) {
+	return *(BYTE*)((DWORD)0xBA6748 + 0x15D);
+}
+
 bool Player::isPaused(void) {
 	return *(bool*)((DWORD)0xBA6748 + 0x5C);
 }
@@ -126,4 +130,10 @@ void Player::hideHUD(void) {
 
 bool Player::getHUD(void) {
 	return *(BYTE*)(0xBA6769);
+}
+
+CLocal::CLocal(void) {
+	local_ped = nullptr;
+	newState = -1;
+	oldState = -1;
 }

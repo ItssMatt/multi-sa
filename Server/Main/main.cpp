@@ -19,13 +19,14 @@
 
 #include "../nlohmann/json.hpp"
 
-#include "../CPlayer/CPlayer.h"
+#include "../../Client/Player/PedStates.h"
+#include "../CPlayer/CPlayer.h" // server-side Player
 #include "../RPC/RPC.h"
 
  /**
  * @dev This function is used to send RPCs to players. This is how we send information to them!
  **/
-int sendRPCToClient(SOCKET client, eServerRPC RPC, int optional = 0) {
+int sendRPCToClient(SOCKET client, eServerRPC RPC, float parameter = 0) {
     char data[20];
     std::sprintf(data, "%d", RPC);
     switch (RPC) {
@@ -37,16 +38,43 @@ int sendRPCToClient(SOCKET client, eServerRPC RPC, int optional = 0) {
     case RPC_KICK_PLAYER:
     {
         for (int i = 0; i < MAX_PLAYERS; i++) {
-            if (CPlayer::gPlayers[i].player_socket != client)
+            if (CPlayer::gPlayers[i].player_socket != client || !CPlayer::gPlayers[i].validPlayer)
                 continue;
             std::cout << "Player #" << CPlayer::gPlayers[i].id << " successfully kicked from the server." << std::endl;
             CPlayer::gPlayers[i].validPlayer = false;
             int bytes = send(client, (char*)data, sizeof(data), 0);
-            Sleep(100);
             closesocket(CPlayer::gPlayers[i].player_socket);
             return bytes;
         }
         std::cout << "The specified player does not exist." << std::endl;
+        break;
+    }
+    case RPC_SET_HEALTH:
+    {
+        for (int i = 0; i < MAX_PLAYERS; i++) {
+            if (CPlayer::gPlayers[i].player_socket != client)
+                continue;
+            //std::cout << "SetPlayerHealth(" << CPlayer::gPlayers[i].id << "," << parameter << ")" << std::endl;
+            CPlayer::gPlayers[i].health = parameter;
+            char buffer[50];
+            std::sprintf(buffer, "%s %.2f", data, parameter);
+            return send(client, buffer, sizeof(buffer), 0);
+            break;
+        }
+        break;
+    }
+    case RPC_SET_ARMOR:
+    {
+        for (int i = 0; i < MAX_PLAYERS; i++) {
+            if (CPlayer::gPlayers[i].player_socket != client)
+                continue;
+            //std::cout << "SetPlayerArmor(" << CPlayer::gPlayers[i].id << "," << parameter << ")" << std::endl;
+            CPlayer::gPlayers[i].armor = parameter;
+            char buffer[50];
+            std::sprintf(buffer, "%s %.2f", data, parameter);
+            return send(client, buffer, sizeof(buffer), 0);
+            break;
+        }
         break;
     }
     }
@@ -60,10 +88,22 @@ int sendRPCToClient(SOCKET client, eServerRPC RPC, int optional = 0) {
 void syncThread(void)
 {
     while (true) {
+        // TESTING
         if (GetAsyncKeyState(VK_F1) & 1)
         {
             std::cout << "Sent\n";
-            sendRPCToClient(CPlayer::gPlayers[0].player_socket, RPC_KICK_PLAYER);
+            sendRPCToClient(CPlayer::gPlayers[0].player_socket, RPC_SET_HEALTH, CPlayer::gPlayers[0].health - 10);
+        }
+        else if (GetAsyncKeyState(VK_F2) & 1) {
+            std::cout << "Sent\n";
+            sendRPCToClient(CPlayer::gPlayers[0].player_socket, RPC_SET_ARMOR, CPlayer::gPlayers[0].armor + 5);
+        }
+        // SYNC
+        for (int i = 0; i < MAX_PLAYERS; i++) {
+            if (!CPlayer::gPlayers[i].validPlayer)
+                continue;
+            //sendRPCToClient(CPlayer::gPlayers[i].player_socket, RPC_SET_HEALTH, CPlayer::gPlayers[i].health); // Health Sync
+            //sendRPCToClient(CPlayer::gPlayers[i].player_socket, RPC_SET_ARMOR, CPlayer::gPlayers[i].armor); // Armor Sync
         }
         Sleep(10);
     }
@@ -149,6 +189,9 @@ int main() {
         CPlayer::gPlayers[id].id = id;
         CPlayer::gPlayers[id].player_socket = clientSocket;
         CPlayer::gPlayers[id].validPlayer = true;
+
+        CPlayer::gPlayers[id].health = 100;
+
         std::cout << "Connection accepted from " << inet_ntoa(clientAddress.sin_addr) << ":" << ntohs(clientAddress.sin_port) << " (pID: " << id << ") " << "[" << CPlayer::getConnectedPlayers() << "/" << MAX_PLAYERS << "]" << "\n";
 
 
@@ -163,7 +206,50 @@ int main() {
 
         // Receive data from the client
         while ((bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0)) > 0) {
-   
+            char* token;
+            bool isFirst = false;
+            int rpc;
+            token = strtok(buffer, " ");
+            rpc = std::stoi(token);
+            token = strtok(nullptr, " ");
+
+            switch (rpc)
+            {
+            case RPC_ON_PLAYER_TAKE_DAMAGE:
+            {
+                for (int i = 0; i < MAX_PLAYERS; i++) {
+                    if (CPlayer::gPlayers[i].player_socket != clientSocket)
+                        continue;
+
+                    float newHealth = std::strtof(token, nullptr);
+                    CPlayer::gPlayers[i].health = std::max<float>(0.0f, CPlayer::gPlayers[i].health - (CPlayer::gPlayers[i].health - newHealth)); // if the player cheated his health, kill
+                    sendRPCToClient(CPlayer::gPlayers[i].player_socket, RPC_SET_HEALTH, CPlayer::gPlayers[i].health);
+                    std::cout << "OnPlayerTakeDamage(playerid=" << i << ", newHealth=" << newHealth << ")" << std::endl;
+                    break;
+                }
+                break;
+            }
+            case RPC_ON_PLAYER_STATE_CHANGE:
+            {
+                for (int i = 0; i < MAX_PLAYERS; i++) {
+                    if (CPlayer::gPlayers[i].player_socket != clientSocket)
+                        continue;
+                    
+                    int newState = std::atoi(token);
+                    token = strtok(nullptr, " ");
+                    int oldState = std::atoi(token);
+
+                    std::cout << "OnPlayerStateChange(playerid=" << i << ", newState=" << stateToChar(newState) << ", oldState=" << stateToChar(oldState) << ")" << std::endl;
+                    break;
+                }
+                break;
+            }
+            default:
+            {
+                std::cout << "Unknown RPC received! (code: " << rpc << ")" << std::endl;
+                break;
+            }
+            }
         }
 
         if (bytesReceived <= 0) {

@@ -11,17 +11,24 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <iostream>
+#include <cstdlib>
 #include <winsock2.h>
 
+#include "../Interface/detours.h"
+
+#pragma comment(lib, "Detours.lib")
 #pragma comment(lib, "ws2_32.lib")
 
 #include "../Player/Player.h"
 
 #include "../../Server/RPC/RPC.h"
 
+#include "../Hooks/hooks.hpp"
+
 #define DEBUG_MODE true
 
 SOCKET clientSocket;
+CLocal LOCAL_PLAYER;
 
 /**
 * @dev The main thread's function. This is the core of the client, here we will handle the data received/sent from/to the server. 
@@ -29,7 +36,6 @@ SOCKET clientSocket;
 ULONG mainThread(void* hModule) 
 {
     /* Handle DLL code. */
-    Player* player = (Player*)(0xB6F5F0); // Local Player
 
     while (!GetAsyncKeyState(VK_END))
     {
@@ -41,14 +47,38 @@ ULONG mainThread(void* hModule)
         //memset((void*)0xA7A6A0, 0, 69000); // disable mission block
 
         if (GetAsyncKeyState(VK_F5) & 1) {
-            player->sendTextBox(player->getLastTypedCharacters());
-            player->resetLastTypedCharacters();
+            LOCAL_PLAYER.local_ped->sendTextBox(LOCAL_PLAYER.local_ped->getLastTypedCharacters());
+            LOCAL_PLAYER.local_ped->resetLastTypedCharacters();
         }
-        if (GetAsyncKeyState(VK_F6) & 1) {
-            player->resetLastTypedCharacters();
+        else if (GetAsyncKeyState(VK_F6) & 1) {
+            LOCAL_PLAYER.local_ped->resetLastTypedCharacters();
         }
-        if (GetAsyncKeyState(VK_F7) & 1) {
+        else if (GetAsyncKeyState(VK_F7) & 1) {
 
+        }
+
+        // EVENTS
+
+        // OnPlayerTakeDamage
+        if (e_onTakeDamage) 
+        {
+            e_onTakeDamage = false;
+            char data[20];
+            std::sprintf(data, "%d %f", RPC_ON_PLAYER_TAKE_DAMAGE, LOCAL_PLAYER.local_ped->getHealth());
+            int bytesSent = send(clientSocket, data, sizeof(data), 0);
+        }
+
+        // OnPlayerStateChange
+        if (LOCAL_PLAYER.local_ped != nullptr && !Player::isPaused() && (int)Player::getMenuID() == 41) {
+            LOCAL_PLAYER.newState = LOCAL_PLAYER.local_ped->getState();
+            if (LOCAL_PLAYER.newState != LOCAL_PLAYER.oldState) {
+                if (LOCAL_PLAYER.oldState != -1) {
+                    char data[20];
+                    std::sprintf(data, "%d %d %d", RPC_ON_PLAYER_STATE_CHANGE, LOCAL_PLAYER.newState, LOCAL_PLAYER.oldState);
+                    int bytesSent = send(clientSocket, data, sizeof(data), 0);
+                }
+                LOCAL_PLAYER.oldState = LOCAL_PLAYER.newState;
+            }
         }
 
         Sleep(10);
@@ -114,7 +144,12 @@ ULONG tcpThread(void)
             std::cerr << "Error receiving data from server\n";
         }
         else {
-            int rpc = std::stoi(buffer);
+            char* token;
+            bool isFirst = false;
+            int rpc;
+            token = strtok(buffer, " ");
+            rpc = std::stoi(token);
+            token = strtok(nullptr, " ");
 
             switch (rpc) {
             case RPC_ACCEPTED_CONNECTION:
@@ -126,6 +161,20 @@ ULONG tcpThread(void)
             {
                 std::cout << "The server closed our connection! (Kicked)" << std::endl;
                 closesocket(clientSocket);
+                break;
+            }
+            case RPC_SET_HEALTH:
+            {
+                if (token == nullptr || LOCAL_PLAYER.local_ped == nullptr || Player::isPaused() || (int)Player::getMenuID() != 41)
+                    break;
+                LOCAL_PLAYER.local_ped->setHealth(std::strtof(token, nullptr));
+                break;
+            }
+            case RPC_SET_ARMOR:
+            {
+                if (token == nullptr || LOCAL_PLAYER.local_ped == nullptr || Player::isPaused() || (int)Player::getMenuID() != 41)
+                    break;
+                LOCAL_PLAYER.local_ped->setArmor(std::strtof(token, nullptr));
                 break;
             }
             default:
@@ -152,8 +201,27 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 std::cout << "Console allocated.\n";
         #endif
 
+        LOCAL_PLAYER = CLocal();
+        LOCAL_PLAYER.local_ped = (Player*)(0xB6F5F0);
+        
+        // HOOKS ATTACH
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)oTakeDamageAddy, onPlayerTakeDamage); // Detour to your custom function
+        DetourTransactionCommit();
+
         CreateThread(0, 0, (LPTHREAD_START_ROUTINE)mainThread, hModule, 0, 0);
         CreateThread(0, 0, (LPTHREAD_START_ROUTINE)tcpThread, NULL, 0, 0);
+    }
+    else if (ul_reason_for_call == DLL_PROCESS_DETACH)
+    {
+        // HOOKS DETACH
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourDetach(&(PVOID&)oTakeDamageAddy, onPlayerTakeDamage);
+        DetourTransactionCommit();
     }
     return TRUE;
 }
