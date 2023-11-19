@@ -7,8 +7,12 @@
 
 #include "Player.h"
 
-CVector3D* Player::getPosition(void) {
-	return (CVector3D*)(*(DWORD*)(*(DWORD*)this + 0x14) + 0x30);
+CVector3D Player::getPosition(void) {
+	return *(CVector3D*)(*(DWORD*)(*(DWORD*)this + 0x14) + 0x30);
+}
+
+void Player::setPosition(CVector3D position) {
+	*(CVector3D*)(*(DWORD*)(*(DWORD*)this + 0x14) + 0x30) = position;
 }
 
 float Player::getRotationZAngle(void) {
@@ -16,7 +20,7 @@ float Player::getRotationZAngle(void) {
 }
 
 void Player::logPosition(void) {
-	std::cout << "X: " << this->getPosition()->x << " | Y: " << this->getPosition()->y << " | Z: " << this->getPosition()->z << std::endl;
+	std::cout << "X: " << this->getPosition().x << " | Y: " << this->getPosition().y << " | Z: " << this->getPosition().z << std::endl;
 }
 
 DWORD Player::getState(void) {
@@ -130,10 +134,4 @@ void Player::hideHUD(void) {
 
 bool Player::getHUD(void) {
 	return *(BYTE*)(0xBA6769);
-}
-
-CLocal::CLocal(void) {
-	local_ped = nullptr;
-	newState = -1;
-	oldState = -1;
 }

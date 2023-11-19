@@ -20,15 +20,19 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #include "../Player/Player.h"
+#include "../Player/CLocal.h"
 
 #include "../../Server/RPC/RPC.h"
 
 #include "../Hooks/hooks.hpp"
 
 #define DEBUG_MODE true
+#define MAX_PLAYERS 10
 
 SOCKET clientSocket;
-CLocal LOCAL_PLAYER;
+CLocal LOCAL_PLAYER = CLocal();
+
+CLocal* PLAYERS = new CLocal[MAX_PLAYERS];
 
 /**
 * @dev The main thread's function. This is the core of the client, here we will handle the data received/sent from/to the server. 
@@ -47,14 +51,15 @@ ULONG mainThread(void* hModule)
         //memset((void*)0xA7A6A0, 0, 69000); // disable mission block
 
         if (GetAsyncKeyState(VK_F5) & 1) {
-            LOCAL_PLAYER.local_ped->sendTextBox(LOCAL_PLAYER.local_ped->getLastTypedCharacters());
-            LOCAL_PLAYER.local_ped->resetLastTypedCharacters();
+            LOCAL_PLAYER.ped->sendTextBox(LOCAL_PLAYER.ped->getLastTypedCharacters());
+            LOCAL_PLAYER.ped->resetLastTypedCharacters();
         }
         else if (GetAsyncKeyState(VK_F6) & 1) {
-            LOCAL_PLAYER.local_ped->resetLastTypedCharacters();
+            LOCAL_PLAYER.ped->resetLastTypedCharacters();
         }
         else if (GetAsyncKeyState(VK_F7) & 1) {
-
+            LOCAL_PLAYER.ped->logPosition();
+            LOCAL_PLAYER.ped->setPosition(CVector3D(LOCAL_PLAYER.ped->getPosition().x, LOCAL_PLAYER.ped->getPosition().y, LOCAL_PLAYER.ped->getPosition().z + 2));
         }
 
         // EVENTS
@@ -64,13 +69,13 @@ ULONG mainThread(void* hModule)
         {
             e_onTakeDamage = false;
             char data[20];
-            std::sprintf(data, "%d %f", RPC_ON_PLAYER_TAKE_DAMAGE, LOCAL_PLAYER.local_ped->getHealth());
+            std::sprintf(data, "%d %f", RPC_ON_PLAYER_TAKE_DAMAGE, LOCAL_PLAYER.ped->getHealth());
             int bytesSent = send(clientSocket, data, sizeof(data), 0);
         }
 
         // OnPlayerStateChange
-        if (LOCAL_PLAYER.local_ped != nullptr && !Player::isPaused() && (int)Player::getMenuID() == 41) {
-            LOCAL_PLAYER.newState = LOCAL_PLAYER.local_ped->getState();
+        if (LOCAL_PLAYER.ped != nullptr && !Player::isPaused() && (int)Player::getMenuID() == 41) {
+            LOCAL_PLAYER.newState = LOCAL_PLAYER.ped->getState();
             if (LOCAL_PLAYER.newState != LOCAL_PLAYER.oldState) {
                 if (LOCAL_PLAYER.oldState != -1) {
                     char data[20];
@@ -81,7 +86,16 @@ ULONG mainThread(void* hModule)
             }
         }
 
-        Sleep(10);
+        // OnPlayerSyncPosition
+        if (LOCAL_PLAYER.ped != nullptr && !Player::isPaused() && *(void**)0xC1703C /* RENDERWARE INIT */ && LOCAL_PLAYER.ped->getMenuID() == 41)
+        {
+            char data[40];
+            std::sprintf(data, "%d %f %f %f", RPC_ON_PLAYER_SYNC_POSITION, 
+                LOCAL_PLAYER.ped->getPosition().x, LOCAL_PLAYER.ped->getPosition().y, LOCAL_PLAYER.ped->getPosition().z);
+            int bytesSent = send(clientSocket, data, sizeof(data), 0);
+        }
+
+        Sleep(500);
     }
     /* Handle DLL closure. Everything from the DLL must be deallocated. */
     // Close the socket and cleanup
@@ -117,7 +131,7 @@ ULONG tcpThread(void)
 
     // Server address and port
     // We should pass this information when running the EXE.exe file, through arguments. TODO!
-    const char* serverIP = "127.0.0.1";
+    const char* serverIP = "188.25.182.38";
     const int serverPort = 6666;
 
     // Fill in the server address details
@@ -154,7 +168,8 @@ ULONG tcpThread(void)
             switch (rpc) {
             case RPC_ACCEPTED_CONNECTION:
             {
-                std::cout << "Server accepted our connection." << std::endl;
+                LOCAL_PLAYER.sID = std::atoi(token);
+                std::cout << "Server accepted our connection. (ID #" << LOCAL_PLAYER.sID << ")" << std::endl;
                 break;
             }
             case RPC_KICK_PLAYER:
@@ -165,16 +180,60 @@ ULONG tcpThread(void)
             }
             case RPC_SET_HEALTH:
             {
-                if (token == nullptr || LOCAL_PLAYER.local_ped == nullptr || Player::isPaused() || (int)Player::getMenuID() != 41)
+                if (token == nullptr || LOCAL_PLAYER.ped == nullptr || Player::isPaused() || (int)Player::getMenuID() != 41)
                     break;
-                LOCAL_PLAYER.local_ped->setHealth(std::strtof(token, nullptr));
+                LOCAL_PLAYER.ped->setHealth(std::strtof(token, nullptr));
+                if (LOCAL_PLAYER.ped->getHealth() <= 0.0f) {
+                    char data[20];
+                    std::sprintf(data, "%d", RPC_ON_PLAYER_DEATH);
+                    int bytesSent = send(clientSocket, data, sizeof(data), 0);
+                }
                 break;
             }
             case RPC_SET_ARMOR:
             {
-                if (token == nullptr || LOCAL_PLAYER.local_ped == nullptr || Player::isPaused() || (int)Player::getMenuID() != 41)
+                if (token == nullptr || LOCAL_PLAYER.ped == nullptr || Player::isPaused() || (int)Player::getMenuID() != 41)
                     break;
-                LOCAL_PLAYER.local_ped->setArmor(std::strtof(token, nullptr));
+                LOCAL_PLAYER.ped->setArmor(std::strtof(token, nullptr));
+                break;
+            }
+            case RPC_SYNC_PLAYER_AT_POSITION:
+            {
+                if (token == nullptr || LOCAL_PLAYER.ped == nullptr || Player::isPaused() || (int)Player::getMenuID() != 41)
+                    break;
+                
+                int sID = std::atoi(token);
+                token = strtok(nullptr, " ");
+
+                float x = std::atof(token);
+                token = strtok(nullptr, " ");
+
+                float y = std::atof(token);
+                token = strtok(nullptr, " ");
+
+                float z = std::atof(token);
+                token = strtok(nullptr, " ");
+
+                CVector3D player_position = CVector3D(x, y, z);
+                CVector3D local_position = CVector3D(LOCAL_PLAYER.ped->getPosition().x, LOCAL_PLAYER.ped->getPosition().y, LOCAL_PLAYER.ped->getPosition().z);
+
+                if (PLAYERS[sID].ped == nullptr) {
+                    //if (CVector3D::isInCircularRange(player_position, local_position, 30.0f)) {
+                        CVector3D position = CVector3D(x, y, z);
+                        PLAYERS[sID].ped = oAddPedAddy(PED_TYPE_CIVMALE, MODEL_PLAYER, position, 0);
+                        PLAYERS[sID].sID = sID;
+                    //}
+                }
+                else {
+                    //if (CVector3D::isInCircularRange(player_position, local_position, 30.0f)) {
+                    oRemovePedAddy(PLAYERS[sID].ped);
+                    PLAYERS[sID].ped = oAddPedAddy(PED_TYPE_CIVMALE, MODEL_PLAYER, player_position, 0);
+                    //}
+                    //else {
+                        //oRemovePedAddy(PLAYERS[sID].ped);
+                        //PLAYERS[sID].ped = nullptr;
+                    //}
+                }
                 break;
             }
             default:
@@ -202,7 +261,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         #endif
 
         LOCAL_PLAYER = CLocal();
-        LOCAL_PLAYER.local_ped = (Player*)(0xB6F5F0);
+        LOCAL_PLAYER.ped = (Player*)(0xB6F5F0);
         
         // HOOKS ATTACH
 

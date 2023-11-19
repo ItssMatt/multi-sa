@@ -2,8 +2,6 @@
 
 	The Player class. The local player and every player on
 	the server is runs by this class.
-	The CLocal class. It holds a pointer to the local player
-	and many variables.
 
  *************************************************************/
 
@@ -20,7 +18,8 @@
 
 class Player {
 public:
-	CVector3D* getPosition(void);
+	CVector3D getPosition(void);
+	void setPosition(CVector3D position);
 	float getRotationZAngle(void);
 	void logPosition(void);
 
@@ -58,15 +57,6 @@ public:
 	void showHUD(void); // (*)
 	void hideHUD(void); // (*)
 	bool getHUD(void); // (*)
-};
-
-class CLocal {
-public:
-	Player* local_ped;
-	DWORD newState;
-	DWORD oldState;
-
-	CLocal(void);
 };
 
 #endif

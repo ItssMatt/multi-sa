@@ -133,13 +133,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CVector\CVector.cpp" />
     <ClCompile Include="CVector\CVector.h" />
     <ClCompile Include="Main\dllmain.cpp" />
+    <ClCompile Include="Player\CLocal.cpp" />
     <ClCompile Include="Player\Player.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Hooks\hooks.hpp" />
     <ClInclude Include="Interface\Detours.h" />
+    <ClInclude Include="Player\CLocal.h" />
     <ClInclude Include="Player\PedStates.h" />
     <ClInclude Include="Player\PedTypes.h" />
     <ClInclude Include="Player\Player.h" />

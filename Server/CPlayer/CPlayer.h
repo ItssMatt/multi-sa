@@ -25,6 +25,7 @@ public:
     // PLAYER VARIABLES
     float health; // server-side health
     float armor; // server-side armor
+    CVector3D position; // server-side position
 
     // CONSTRUCTORS
     CPlayer(void);

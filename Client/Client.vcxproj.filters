@@ -27,6 +27,12 @@
     <ClCompile Include="Player\Player.cpp">
       <Filter>Player</Filter>
     </ClCompile>
+    <ClCompile Include="Player\CLocal.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="CVector\CVector.cpp">
+      <Filter>CVector</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Player\Player.h">
@@ -42,6 +48,9 @@
       <Filter>Player</Filter>
     </ClInclude>
     <ClInclude Include="Player\PedTypes.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Player\CLocal.h">
       <Filter>Player</Filter>
     </ClInclude>
   </ItemGroup>
