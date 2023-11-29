@@ -16,3 +16,5 @@ The project reached the initial target when I started it. But there are still ma
 - All vehicles must be removed and handled by the server only!
 - Animations must be added, as well as facing angle + sync for both of them.
 - DirectX9 should be injected to create a chat and other things on screen.
+
+![](https://github.com/ItssMatt/multi-sa/blob/main/demo.gif)
